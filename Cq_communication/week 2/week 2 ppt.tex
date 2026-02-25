@@ -1,0 +1,438 @@
+\documentclass{beamer}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+\usepackage{physics}
+\usepackage{braket}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{multirow}
+\usepackage{array}
+
+% Beamer theme
+\usetheme{Madrid}
+\usecolortheme{seahorse}
+\setbeamertemplate{navigation symbols}{}
+
+% Theorem environments for beamer
+\setbeamertemplate{theorem}[ams style]
+\setbeamertemplate{theorems}[numbered]
+
+\theoremstyle{definition}
+\newtheorem{defi}{Definition}[section]
+
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}[section]
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{prop}[thm]{Proposition}
+
+% Title page
+\title[Week 2 Report]{Week 2 Internship Report: \\ Quantum Communication Theory \\ \small Noisy Quantum Channels and Information-Theoretic Limits}
+\subtitle{Connection to Week 1: Foundations and Framework}
+\author{Kaumud Sharma}
+\institute{}
+\date{}
+
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+    \tableofcontents
+\end{frame}
+
+\section{Introduction: Connection to Week 1 Foundations}
+
+\begin{frame}{Week 1: Established Foundation}
+    \begin{block}{Week 1 Achievements}
+        \begin{enumerate}
+            \item \textbf{Electromagnetic foundations}: Maxwell's equations, modal decomposition
+            \item \textbf{Quantum field theory}: Field quantization, coherent states
+            \item \textbf{Atom-field interaction}: Hamiltonian $H(t|\theta)$ with fiber parameters
+            \item \textbf{Cq channel theory}: Encoding, Holevo capacity
+            \item \textbf{Computational complexity}: NP-hardness via SJIP reduction
+        \end{enumerate}
+    \end{block}
+    
+    \begin{block}{Week 2: Extensions to Noisy Channels}
+        \begin{enumerate}
+            \item \textbf{Noise modeling}: GKSL master equation
+            \item \textbf{Exact dynamics}: Solution methods
+            \item \textbf{Noisy capacity}: Holevo capacity under noise
+            \item \textbf{Fundamental limits}: Quantum DPI
+            \item \textbf{Decoding ambiguity}: Formal characterization
+        \end{enumerate}
+    \end{block}
+\end{frame}
+
+\section{Mathematical Modeling of Fiber Noise}
+
+\begin{frame}{From Ideal to Noisy Propagation}
+\footnotesize
+
+\begin{block}{Week 1: Ideal Model}
+\textbf{Coherent State:} $|\alpha(0)\rangle \to |\alpha(L)\rangle$ with $\alpha(L) = \alpha(0)e^{i\beta L}e^{-\alpha L/2}$
+\begin{itemize}
+    \item Noiseless, perfect information, deterministic
+\end{itemize}
+\end{block}
+
+\vspace{0.2cm}
+
+\begin{block}{Week 2: Realistic Model with GKSL Master Equation}
+\[
+\dv{\rho}{t} = -i[H,\rho] + \sum_k \gamma_k\left(L_k \rho L_k^\dagger - \frac{1}{2}\{L_k^\dagger L_k, \rho\}\right)
+\]
+
+\textbf{Fiber Noise Sources:}
+\begin{itemize}
+    \item Amplitude damping: $\gamma_{\text{loss}}$, Phase damping: $\gamma_\phi$
+    \item Non-unitary evolution, information loss, stochastic processes
+\end{itemize}
+\end{block}
+
+\vspace{0.2cm}
+
+\begin{alertblock}{Key Connection}
+Week 1's attenuation $\alpha$ becomes Week 2's damping: $\gamma_{\text{loss}} = \frac{\alpha v_g \ln(10)}{10}$
+
+Ideal model = special case when $\gamma_{\text{loss}} = \gamma_\phi = 0$
+\end{alertblock}
+
+\end{frame}
+
+\begin{frame}{GKSL Master Equation}
+    \begin{thm}[GKSL Master Equation]
+        \[
+        \dv{\rho_S}{t} = -i[H_S, \rho_S] + \sum_{k} \gamma_k \left( L_k \rho_S L_k^\dagger - \frac{1}{2} \{L_k^\dagger L_k, \rho_S\} \right)
+        \]
+    \end{thm}
+    
+    \begin{block}{Connection to Week 1 Parameters}
+        \begin{align*}
+            \gamma_{\text{loss}} &= \frac{\alpha v_g \ln(10)}{10} \\
+            \gamma_\phi &= \frac{(\omega D_p \Delta L)^2 v_g}{2}
+        \end{align*}
+        where $\alpha$, $D_p$ are Week 1 fiber parameters
+    \end{block}
+\end{frame}
+
+\section{Exact Solution Methods}
+
+\begin{frame}{Direct Diagonalization Method}
+    \begin{thm}[Direct Diagonalization]
+        For $d$-dimensional system, Liouvillian $\mathbb{L}$ is $d^2 \times d^2$:
+        \[
+        \vec{\rho}(t) = e^{\mathbb{L}t} \vec{\rho}(0)
+        \]
+    \end{thm}
+    
+    \begin{block}{Complexity}
+        \begin{itemize}
+            \item Scales as $O(d^6)$
+            \item Limited to small systems ($d \lesssim 10$)
+            \item Exact up to numerical precision
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}{Quantum Trajectory Method}
+    \begin{block}{For Non-Markovian Dynamics}
+        \[
+        \dv{}{t} \ket{\psi(t)} = -i H_{\text{eff}}(t) \ket{\psi(t)} + \sum_k \xi_k(t) L_k \ket{\psi(t - \tau_k)}
+        \]
+    \end{block}
+    
+    \begin{block}{Advantages}
+        \begin{itemize}
+            \item Handles large systems
+            \item Captures exact noise correlations
+            \item Parallelizable via Monte Carlo
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\section{Holevo Capacity Calculation}
+
+\begin{frame}{From Ideal to Noisy Capacity}
+    \begin{columns}[T]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Week 1: Ideal Capacity}
+                \centering
+                \[
+                C(\theta) = \max_{p(x)} \chi(\{p(x), \rho(x|\theta)\})
+                \]
+                For ideal channels
+            \end{block}
+        \end{column}
+        
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Week 2: Noisy Capacity}
+                \centering
+                \[
+                C_\chi(\mathcal{N}) = \max_{\{p(x), \rho_x\}} \chi(\{p(x), \mathcal{N}(\rho_x)\})
+                \]
+                For noisy channel $\mathcal{N}$
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Analytical Capacities for Specific Channels}
+    \begin{thm}[Depolarizing Channel]
+        \[
+        C_\chi^{\text{dep}} = 1 - H_2\left( \frac{p}{2} \right) - p \log_2 3
+        \]
+    \end{thm}
+    
+    \begin{thm}[Fiber Noise Channel]
+        \[
+        C_\chi^{\text{fiber}} \leq \min \left\{ C_\chi^{\text{AD}}(\gamma), C_\chi^{\text{PD}}(\lambda) \right\}
+        \]
+    \end{thm}
+    
+    \begin{block}{For typical fiber parameters}
+        $C_\chi \approx 0.7-0.9$ bits per photon
+    \end{block}
+\end{frame}
+
+\section{Post-Channel CPTP Correction}
+
+\begin{frame}{Quantum Data Processing Inequality}
+    \begin{thm}[Quantum DPI]
+        For $\rho \to \sigma \to \tau$ with $\tau = \mathcal{C}(\sigma)$:
+        \[
+        I(\rho; \tau) \leq I(\rho; \sigma)
+        \]
+    \end{thm}
+    
+    \begin{thm}[Capacity Non-Increase]
+        For any $\mathcal{N}$ and CPTP $\mathcal{C}$:
+        \[
+        C_\chi(\mathcal{C} \circ \mathcal{N}) \leq C_\chi(\mathcal{N})
+        \]
+    \end{thm}
+\end{frame}
+
+\begin{frame}{Implications for Communication Strategy}
+    \begin{cor}[Optimal Strategy Structure]
+        Optimal receiver must be:
+        \[
+        \mathrm{Measurement} \circ \mathcal{N}
+        \]
+        \textbf{not}
+        \[
+        \mathrm{Measurement} \circ \mathcal{C} \circ \mathcal{N}
+        \]
+        for any CPTP $\mathcal{C}$
+    \end{cor}
+    
+    \begin{block}{Key Insight}
+        \begin{itemize}
+            \item Post-channel correction cannot increase capacity
+            \item Focus on optimal encoding and measurement
+            \item Quantum error correction must be \textit{before} channel
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\section{Decoding/Inversion Ambiguity}
+
+\begin{frame}{Channel Non-Injectivity}
+    \begin{thm}[Non-Injectivity of Noisy Channels]
+        For any non-unitary $\mathcal{N}$, $\exists \rho_1 \neq \rho_2$ such that:
+        \[
+        \mathcal{N}(\rho_1) = \mathcal{N}(\rho_2)
+        \]
+    \end{thm}
+    
+    \begin{defi}[Ambiguity Set]
+        \[
+        \mathcal{A}(\sigma) = \{ \rho' : \mathcal{N}(\rho') = \sigma \}
+        \]
+    \end{defi}
+\end{frame}
+
+\begin{frame}{Capacity-Ambiguity Trade-off}
+    \begin{thm}[Capacity-Ambiguity Relation]
+        \[
+        C_\chi(\mathcal{N}) \leq \log_2\left( \frac{1}{\mathcal{A}_{\min}} \right)
+        \]
+        where $\mathcal{A}_{\min}$ is minimum achievable ambiguity
+    \end{thm}
+    
+    \begin{block}{Connection to Week 1}
+        \begin{itemize}
+            \item Week 1: NP-hardness via SJIP reduction
+            \item Week 2: Additional ambiguity from non-injectivity
+            \item Combined: Even harder decoding problem
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\section{Integrated Framework: Weeks 1 \& 2}
+
+\begin{frame}{Theoretical Progression}
+    \centering
+    \tiny
+    \begin{tabular}{|c|p{4cm}|p{4cm}|}
+        \hline
+        \textbf{Stage} & \textbf{Week 1: Foundations} & \textbf{Week 2: Extensions} \\
+        \hline
+        \textbf{Physical} & Maxwell, quantization & GKSL, exact solutions \\
+        \hline
+        \textbf{Information} & Holevo capacity & Noisy capacities, DPI \\
+        \hline
+        \textbf{Computational} & SJIP hardness & Ambiguity characterization \\
+        \hline
+        \textbf{Parameters} & $\theta = \{L,\alpha,\beta_2,\ldots\}$ & $\gamma = \{\gamma_{\text{loss}},\gamma_\phi,\ldots\}$ \\
+        \hline
+    \end{tabular}
+    
+    \vspace{0.3cm}
+    
+    \begin{block}{Key Theorem Connections}
+        \tiny
+        \begin{tabular}{p{0.45\textwidth} p{0.45\textwidth}}
+            \hline
+            \textbf{Week 1 Theorems} & \textbf{Week 2 Extensions} \\
+            \hline
+            Field quantization: $\hat{A} = \sum_m \sqrt{\frac{\hbar\omega_m}{2\epsilon_0 V_m}} (\hat{a}_m f_m + \text{h.c.})$ & GKSL: $\dv{\rho}{t} = -i[H,\rho] + \sum_k \gamma_k (L_k \rho L_k^\dagger - \frac{1}{2}\{L_k^\dagger L_k, \rho\})$ \\
+            \hline
+            Holevo bound: $I(X:Y) \leq \chi(\{p(x), \rho(x|\theta)\})$ & Capacity non-increase: $C_\chi(\mathcal{C} \circ \mathcal{N}) \leq C_\chi(\mathcal{N})$ \\
+            \hline
+            SJIP NP-hardness: Subset-Sum $\leq_p$ SJIP & Non-injectivity: $\exists \rho_1 \neq \rho_2$ s.t. $\mathcal{N}(\rho_1) = \mathcal{N}(\rho_2)$ \\
+            \hline
+        \end{tabular}
+    \end{block}
+\end{frame}
+
+\section{Progress Summary}
+
+\begin{frame}{Week 1 Achievements}
+    \begin{enumerate}
+        \item Established complete electromagnetic foundation
+        \item Derived quantum field quantization in fibers
+        \item Developed Cq channel theory with parameter dependence
+        \item Proved NP-hardness of optimal decoding via SJIP
+        \item Provided explicit formulas for system design
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Week 2 Extensions}
+    \begin{enumerate}
+        \item Extended physical modeling to include noise via GKSL
+        \item Developed exact solution methods for noisy dynamics
+        \item Calculated Holevo capacities for various noisy channels
+        \item Proved fundamental limits via Quantum DPI
+        \item Characterized decoding ambiguity under noise
+        \item Integrated all results with Week 1 foundations
+    \end{enumerate}
+\end{frame}
+
+\section{Conclusion and Future Work}
+
+\begin{frame}{Key Integrated Insights}
+    \small
+    \begin{enumerate}
+        \item \textbf{Physical-Information Connection:}
+        \[
+        \gamma_{\text{loss}} = \frac{\alpha v_g \ln(10)}{10}, \quad \gamma_\phi = \frac{(\omega D_p \Delta L)^2 v_g}{2}
+        \]
+        
+        \item \textbf{Fundamental Limits:}
+        \vspace{-0.1cm}
+        \begin{align*}
+        I(X:Y) &\leq \chi(\{p(x), \rho(x|\theta)\}) \\
+        C_\chi(\mathcal{C} \circ \mathcal{N}) &\leq C_\chi(\mathcal{N})
+        \end{align*}
+        
+        \item \textbf{Computational Reality:} NP-hardness + ambiguity
+        
+        \item \textbf{Practical Guidance:} Explicit design formulas
+    \end{enumerate}
+\end{frame}
+
+\begin{frame}{Future Directions}
+    \begin{block}{Building on Both Weeks}
+        \begin{enumerate}
+            \item \textbf{Experimental validation} with fiber-optic testbeds
+            \item \textbf{Algorithm development} respecting complexity constraints
+            \item \textbf{System optimization} using parameter-dependent formulas
+            \item \textbf{Extension} to channels with memory, nonlinear effects
+        \end{enumerate}
+    \end{block}
+    
+    \vspace{0.3cm}
+    
+    \begin{alertblock}{Optimization Problem}
+        \[
+        \max_{\theta} C(\theta) = \max_{\theta} \max_{p(x)} \chi(\{p(x), \rho(x|\theta)\})
+        \]
+    \end{alertblock}
+\end{frame}
+
+\begin{frame}{Final Remarks}
+    \begin{block}{Complete Theoretical Picture}
+        \begin{itemize}
+            \item \textbf{Connects} physical reality to information limits
+            \item \textbf{Bridges} ideal theory with practical considerations
+            \item \textbf{Links} information limits with computational limits
+            \item \textbf{Provides} explicit guidance for system design
+        \end{itemize}
+    \end{block}
+    
+    \vspace{0.5cm}
+    
+    \centering
+    \Large
+    \textbf{Integrated framework offers both theoretical \\ insights and practical engineering value}
+\end{frame}
+
+\appendix
+\begin{frame}{Appendix: Mathematical Connections}
+    \begin{block}{From Week 1 to Week 2 Propagation}
+        Week 1 ideal:
+        \[
+        |\alpha(0)\rangle \to |\alpha(L)\rangle, \quad \alpha(L) = \alpha(0)e^{i\beta L}e^{-\alpha L/2}
+        \]
+        
+        Week 2 noisy (amplitude damping):
+        \[
+        E_0 = \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-\eta(t)} \end{pmatrix}, \quad E_1 = \begin{pmatrix} 0 & \sqrt{\eta(t)} \\ 0 & 0 \end{pmatrix}
+        \]
+        with $\eta(t) = 1 - e^{-\gamma_{\text{loss}}t}$
+    \end{block}
+\end{frame}
+
+\begin{frame}{Appendix: Parameter Dependencies}
+    \begin{block}{Across Weeks}
+        \small
+        \begin{align*}
+            \text{Week 1: } & g(\theta) = d_{eg}\sqrt{\frac{\omega_0^3}{2\hbar\epsilon_0 V_{\text{eff}}(\theta)}} |f_0(r_{\text{atom}}|\theta)| \\
+            \text{Week 2: } & \gamma_{\text{loss}} = \frac{\alpha v_g \ln(10)}{10}
+        \end{align*}
+    \end{block}
+    
+    \begin{block}{Connection Insight}
+        Smaller $V_{\text{eff}}$ (Week 1) increases coupling but also affects loss rates (Week 2)
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \centering
+    \Huge
+    \textbf{Thank You}
+    
+    \vspace{1cm}
+    
+    \large
+    Questions?
+\end{frame}
+
+\end{document}

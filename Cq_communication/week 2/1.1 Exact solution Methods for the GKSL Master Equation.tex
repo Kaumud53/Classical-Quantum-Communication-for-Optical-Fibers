@@ -1,0 +1,305 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{physics}
+\usepackage{braket}
+\usepackage{tensor}
+\usepackage{graphicx}
+\usepackage{algorithmic}
+
+\title{Exact Solution Methods for the GKSL Master Equation}
+\author{Quantum Communication Theory}
+\date{Week 2: Noisy Quantum Channels}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+This document presents exact methods for solving the quantum master equation without resorting to the Born-Markov or secular approximations. We focus on numerically exact and analytically exact approaches for modeling fiber noise.
+
+\section{Exact Numerical Methods}
+
+\subsection{Direct Diagonalization of the Liouvillian}
+
+The Lindblad master equation can be written as:
+\[
+\frac{d\rho}{dt} = \mathcal{L}[\rho]
+\]
+where $\mathcal{L}$ is the Liouvillian superoperator. For a $d$-dimensional system, $\rho$ is a $d \times d$ matrix, which we vectorize to a $d^2$-dimensional vector.
+
+\subsubsection{Vectorization Procedure}
+Define the vectorization operation $\text{vec}(\rho)$ that stacks columns of $\rho$. The Liouvillian becomes a $d^2 \times d^2$ matrix $\mathbb{L}$:
+\[
+\frac{d\vec{\rho}}{dt} = \mathbb{L} \vec{\rho}
+\]
+where for the Lindblad equation:
+\[
+\mathcal{L}[\rho] = -i[H, \rho] + \sum_k \gamma_k \left( L_k \rho L_k^\dagger - \frac{1}{2}\{L_k^\dagger L_k, \rho\} \right)
+\]
+becomes:
+\[
+\mathbb{L} = -i(H \otimes I - I \otimes H^T) + \sum_k \gamma_k \left( L_k \otimes L_k^* - \frac{1}{2}(L_k^\dagger L_k \otimes I + I \otimes (L_k^\dagger L_k)^T) \right)
+\]
+
+\subsubsection{Exact Solution via Matrix Exponential}
+The formal solution is:
+\[
+\vec{\rho}(t) = e^{\mathbb{L} t} \vec{\rho}(0)
+\]
+We compute this exactly using:
+\begin{enumerate}
+    \item Diagonalize $\mathbb{L} = V \Lambda V^{-1}$ where $\Lambda = \text{diag}(\lambda_1, \ldots, \lambda_{d^2})$
+    \item Then $e^{\mathbb{L} t} = V e^{\Lambda t} V^{-1}$
+    \item The solution is: $\vec{\rho}(t) = V e^{\Lambda t} V^{-1} \vec{\rho}(0)$
+\end{enumerate}
+
+\subsubsection{Algorithm Complexity}
+\begin{itemize}
+    \item Memory: $O(d^4)$ for storing $\mathbb{L}$
+    \item Time: $O(d^6)$ for diagonalization
+    \item For $d=2$ (qubit): feasible ($16 \times 16$ matrix)
+    \item For $d > 10$: becomes computationally expensive
+\end{itemize}
+
+\subsection{Quantum Trajectory Method (Monte Carlo Wavefunction)}
+
+For large systems where direct diagonalization is infeasible, use the quantum trajectory method without approximations.
+
+\subsubsection{Exact Non-Markovian Quantum Trajectories}
+For a system interacting with a structured environment, the exact evolution can be simulated using:
+
+\begin{equation}
+\frac{d}{dt}\ket{\psi(t)} = -iH_{\text{eff}}(t)\ket{\psi(t)} + \sum_k \xi_k(t) L_k \ket{\psi(t-\tau_k)}
+\label{eq:exact_traj}
+\end{equation}
+where $\xi_k(t)$ are colored noise processes with correlation functions:
+\[
+\langle \xi_k(t) \xi_k'(t') \rangle = \gamma_k \gamma_{k'} C_{kk'}(t-t')
+\]
+and $C_{kk'}(\tau)$ is the environment correlation function.
+
+\subsubsection{Numerical Implementation}
+\begin{algorithmic}[1]
+\STATE Initialize $\ket{\psi(0)}$
+\STATE Discretize time: $t_n = n\Delta t$, $n=0,\ldots,N$
+\FOR{$n=0$ to $N-1$}
+    \STATE Compute $H_{\text{eff}}(t_n) = H_S + \sum_k \gamma_k \int_0^{t_n} C_k(t_n-s) L_k^\dagger L_k ds$
+    \STATE Generate noise samples $\xi_k(t_n)$ with correct correlations
+    \STATE Update: $\ket{\psi(t_{n+1})} = \ket{\psi(t_n)} - i\Delta t H_{\text{eff}}(t_n)\ket{\psi(t_n)} + \sum_k \sqrt{\gamma_k \Delta t} \xi_k(t_n) L_k \ket{\psi(t_n)}$
+\ENDFOR
+\STATE Repeat for many trajectories and average: $\rho(t) = \frac{1}{M} \sum_{i=1}^M \ket{\psi_i(t)}\bra{\psi_i(t)}$
+\end{algorithmic}
+
+\subsection{Time-Evolving Matrix Product Operators (TEMPO)}
+
+For systems with structured environments and strong coupling, use the TEMPO algorithm.
+
+\subsubsection{Discretized Path Integral Representation}
+The reduced density matrix can be written as a discretized path integral:
+\[
+\rho(t) = \int \mathcal{D}[\sigma] \mathcal{D}[\sigma'] e^{i(S[\sigma] - S[\sigma'])} \mathcal{F}[\sigma,\sigma'] \rho(0)
+\]
+where $\mathcal{F}[\sigma,\sigma']$ is the Feynman-Vernon influence functional.
+
+\subsubsection{Matrix Product State Representation}
+Discretize time into $N$ steps and represent the augmented density tensor as a matrix product state:
+\[
+A^{s_1 s_1' \ldots s_N s_N'} = \sum_{\alpha_1,\ldots,\alpha_{N-1}} M_1^{s_1 s_1',\alpha_1} M_2^{\alpha_1,s_2 s_2',\alpha_2} \cdots M_N^{\alpha_{N-1},s_N s_N'}
+\]
+
+\subsubsection{TEMPO Algorithm Steps}
+\begin{enumerate}
+    \item Discretize the time interval $[0,T]$ into $N$ steps
+    \item Construct the augmented density tensor for the system+environment
+    \item Use singular value decomposition to compress the MPS representation
+    \item Time-evolve using the process tensor method
+    \item Extract the reduced density matrix at each time step
+\end{enumerate}
+
+\section{Exact Analytical Methods}
+
+\subsection{Integro-Differential Equation Form}
+
+Without Markov approximation, the exact master equation is:
+
+\begin{equation}
+\frac{d\rho_S(t)}{dt} = -i[H_S, \rho_S(t)] + \int_0^t d\tau \left( \mathcal{K}(t-\tau)[\rho_S(\tau)] \right)
+\label{eq:exact_master}
+\end{equation}
+where the memory kernel $\mathcal{K}(\tau)$ is:
+\[
+\mathcal{K}(\tau)[\rho_S] = \text{Tr}_E\left( [H_I, e^{-iH_0\tau}[H_I, \rho_S \otimes \rho_E] e^{iH_0\tau}] \right)
+\]
+
+\subsection{Solving via Laplace Transform}
+
+Take the Laplace transform of Eq. \eqref{eq:exact_master}:
+\[
+s\tilde{\rho}_S(s) - \rho_S(0) = -i[H_S, \tilde{\rho}_S(s)] + \tilde{\mathcal{K}}(s)[\tilde{\rho}_S(s)]
+\]
+where $\tilde{\mathcal{K}}(s) = \int_0^\infty e^{-st} \mathcal{K}(t) dt$.
+
+Rearrange:
+\[
+\left( s + i\mathcal{H}_S - \tilde{\mathcal{K}}(s) \right) \tilde{\rho}_S(s) = \rho_S(0)
+\]
+where $\mathcal{H}_S[\rho] = [H_S, \rho]$.
+
+The solution in Laplace domain is:
+\[
+\tilde{\rho}_S(s) = \left( s + i\mathcal{H}_S - \tilde{\mathcal{K}}(s) \right)^{-1} \rho_S(0)
+\]
+
+Invert the Laplace transform:
+\[
+\rho_S(t) = \frac{1}{2\pi i} \int_{c-i\infty}^{c+i\infty} e^{st} \left( s + i\mathcal{H}_S - \tilde{\mathcal{K}}(s) \right)^{-1} \rho_S(0) ds
+\]
+
+\subsection{Spectral Density Method}
+
+For an environment with spectral density $J(\omega)$, the correlation function is:
+\[
+C(t) = \int_0^\infty d\omega J(\omega) \left[ \coth\left(\frac{\hbar\omega}{2k_B T}\right) \cos(\omega t) - i \sin(\omega t) \right]
+\]
+
+The exact solution can be obtained using the chain mapping technique:
+
+\subsubsection{Chain Mapping Transformation}
+The Hamiltonian $H = H_S + H_B + H_I$ with:
+\[
+H_B = \sum_k \omega_k b_k^\dagger b_k, \quad H_I = \sum_k g_k (L^\dagger b_k + L b_k^\dagger)
+\]
+can be transformed to a chain representation:
+\[
+H = H_S + \sum_{n=0}^\infty \epsilon_n a_n^\dagger a_n + t_n (a_n^\dagger a_{n+1} + a_{n+1}^\dagger a_n) + g_0 (L^\dagger a_0 + L a_0^\dagger)
+\]
+using orthogonal polynomials.
+
+\subsubsection{Time-Dependent Density Matrix Renormalization Group (t-DMRG)}
+Solve the chain Hamiltonian using t-DMRG:
+\begin{enumerate}
+    \item Represent the state as a matrix product state: $\ket{\psi} = \sum_{\{s\}} A^{s_1} A^{s_2} \cdots A^{s_N} \ket{s_1 s_2 \ldots s_N}$
+    \item Time evolve using the time-dependent variational principle (TDVP)
+    \item Compute $\rho_S(t) = \text{Tr}_B(\ket{\psi(t)}\bra{\psi(t)})$
+\end{enumerate}
+
+\section{Exact Solution for Specific Models}
+
+\subsection{The Spin-Boson Model}
+
+For a qubit coupled to a bosonic bath:
+\[
+H = \frac{\epsilon}{2} \sigma_z + \frac{\Delta}{2} \sigma_x + \sum_k \omega_k b_k^\dagger b_k + \sigma_z \sum_k \frac{g_k}{2} (b_k^\dagger + b_k)
+\]
+
+\subsubsection{Exact Solution via Polaron Transformation}
+Apply the unitary transformation:
+\[
+U = \exp\left[ \sigma_z \sum_k \frac{g_k}{2\omega_k} (b_k^\dagger - b_k) \right]
+\]
+The transformed Hamiltonian becomes:
+\[
+\tilde{H} = \frac{\epsilon}{2} \sigma_z + \frac{\Delta}{2} (\sigma_+ X + \sigma_- X^\dagger) + \sum_k \omega_k b_k^\dagger b_k
+\]
+where $X = \exp\left[ \sum_k \frac{g_k}{\omega_k} (b_k^\dagger - b_k) \right]$.
+
+The exact reduced density matrix elements are:
+\begin{align}
+\rho_{00}(t) &= \frac{1}{2} \left[ 1 + e^{-\Gamma(t)} \cos(\epsilon t) \right] \\
+\rho_{11}(t) &= \frac{1}{2} \left[ 1 - e^{-\Gamma(t)} \cos(\epsilon t) \right] \\
+\rho_{01}(t) &= -\frac{i}{2} e^{-\Gamma(t)} \sin(\epsilon t) e^{-\Phi(t)}
+\end{align}
+where:
+\begin{align}
+\Gamma(t) &= \int_0^\infty \frac{J(\omega)}{\omega^2} (1 - \cos(\omega t)) \coth\left(\frac{\hbar\omega}{2k_B T}\right) d\omega \\
+\Phi(t) &= \int_0^\infty \frac{J(\omega)}{\omega^2} \sin(\omega t) d\omega
+\end{align}
+
+\subsection{The Jaynes-Cummings Model with Loss}
+
+For a qubit coupled to a cavity with photon loss:
+\[
+H = \omega_q \sigma_+ \sigma_- + \omega_c a^\dagger a + g (\sigma_+ a + \sigma_- a^\dagger)
+\]
+with loss described by Lindblad operator $L = \sqrt{\kappa} a$.
+
+\subsubsection{Exact Solution in Liouville Space}
+The Liouvillian in the basis $\{\ket{g,0}, \ket{e,0}, \ket{g,1}, \ket{e,1}, \ldots\}$ is block diagonal. For the $n$-photon subspace:
+\[
+\mathbb{L}_n = \begin{pmatrix}
+-\frac{\kappa n}{2} & -ig\sqrt{n} & 0 & 0 \\
+-ig\sqrt{n} & -\frac{\kappa n}{2} & 0 & 0 \\
+0 & 0 & -\frac{\kappa(n+1)}{2} & -ig\sqrt{n+1} \\
+0 & 0 & -ig\sqrt{n+1} & -\frac{\kappa(n+1)}{2}
+\end{pmatrix}
+\]
+The exact solution is:
+\[
+\rho(t) = \sum_{n=0}^\infty e^{\mathbb{L}_n t} \rho_n(0)
+\]
+
+\section{Comparison of Methods}
+
+\subsection{Computational Complexity}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|l|c|c|c|}
+\hline
+Method & Memory & Time & Maximum System Size \\
+\hline
+Direct Diagonalization & $O(d^4)$ & $O(d^6)$ & $d \sim 10$ \\
+Quantum Trajectories & $O(d^2)$ & $O(N_t N_{\text{traj}} d^3)$ & $d \sim 100$ \\
+TEMPO & $O(\chi^2 N)$ & $O(\chi^3 N)$ & Large (MPS bond dim $\chi$) \\
+HEOM & $O(N_{\text{tier}}^2 d^2)$ & $O(N_{\text{tier}}^3 d^6)$ & Moderate \\
+\hline
+\end{tabular}
+\caption{Comparison of exact solution methods}
+\end{table}
+
+\subsection{Accuracy Considerations}
+
+\begin{itemize}
+\item \textbf{Direct diagonalization}: Exact up to numerical precision, limited to small systems
+\item \textbf{Quantum trajectories}: Exact in the limit $N_{\text{traj}} \to \infty$, good for large systems
+\item \textbf{TEMPO}: Controlled accuracy via bond dimension $\chi$, exact as $\chi \to \infty$
+\item \textbf{HEOM}: Exact for certain spectral densities, accuracy controlled by truncation tier
+\end{itemize}
+
+\section{Application to Fiber Noise}
+
+For an optical fiber with non-Markovian noise, the exact spectral density is:
+\[
+J(\omega) = \frac{\alpha \omega^3}{\omega_c^2} e^{-\omega/\omega_c} + \frac{\beta \omega}{1 + (\omega/\omega_D)^2}
+\]
+where:
+\begin{itemize}
+\item First term: Acoustic phonon contribution (Ohmic with cutoff)
+\item Second term: Thermal contribution (Drude-Lorentz)
+\item $\omega_c$: Cutoff frequency $\sim 10^{12}$ Hz
+\item $\omega_D$: Debye frequency $\sim 10^{13}$ Hz
+\end{itemize}
+
+The exact non-Markovian master equation becomes:
+\[
+\frac{d\rho}{dt} = -i[H_{\text{fiber}}, \rho] + \int_0^t \left[ \Gamma_1(t-\tau)\mathcal{D}[\sigma_-] + \Gamma_2(t-\tau)\mathcal{D}[\sigma_z] \right] \rho(\tau) d\tau
+\]
+with memory kernels:
+\begin{align}
+\Gamma_1(t) &= \int_0^\infty J_{\text{loss}}(\omega) \left[ \coth\left(\frac{\hbar\omega}{2k_B T}\right) \cos(\omega t) - i \sin(\omega t) \right] d\omega \\
+\Gamma_2(t) &= \int_0^\infty J_{\text{dephase}}(\omega) \left[ \coth\left(\frac{\hbar\omega}{2k_B T}\right) \cos(\omega t) \right] d\omega
+\end{align}
+
+\section{Conclusion}
+
+Exact solution of the master equation without approximations requires:
+\begin{enumerate}
+\item For small systems ($d \leq 10$): Direct diagonalization
+\item For moderate systems with structured environments: HEOM or TEMPO
+\item For large systems: Quantum trajectory methods with exact noise correlations
+\item For specific models: Analytical solutions using polaron or other transformations
+\end{enumerate}
+
+The choice depends on system size, bath structure, and available computational resources. For fiber noise modeling, TEMPO or HEOM are recommended as they capture non-Markovian effects exactly.
+
+\end{document}

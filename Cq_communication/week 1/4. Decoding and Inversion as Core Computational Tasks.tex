@@ -1,0 +1,440 @@
+% Decoding and Inversion as Core Computational Tasks
+\documentclass[11pt,a4paper]{article}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{braket}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=1in}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{red},
+    showstringspaces=false,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    breaklines=true
+}
+
+\title{Decoding and Inversion as Core Computational Tasks}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section*{Introduction}
+
+Building on the complete atom-field framework $H(t|\theta)$, we identify and formalize the two fundamental computational challenges at the receiver.
+
+\section{Part 1: Receiver Architecture Overview}
+
+\subsection{Signal Flow at Receiver}
+
+The process follows the path: Quantum State $\rightarrow$ Measurement $\rightarrow$ Classical Data $\rightarrow$ Estimate.
+
+\begin{equation}
+\rho_{\text{output}}(x|\theta) \xrightarrow{\{\Pi_y\}} y \rightarrow \hat{x}
+\end{equation}
+
+There are two computational bottlenecks:
+\begin{itemize}
+    \item \textbf{DECODING:} Given measurement outcome $y$, infer transmitted message $x$.
+    \item \textbf{INVERSION:} Given system parameters $\theta$, design optimal measurement $\{\Pi_y\}$ and decoder $D$.
+\end{itemize}
+
+\subsection{Problem Hierarchy}
+
+\begin{itemize}
+    \item \textbf{OUTER PROBLEM (Inversion):}
+    \begin{itemize}
+        \item Find optimal $\theta^*$, $\{\Pi_y\}$, $D$ to maximize $I(X : Y)$.
+    \end{itemize}
+    \item \textbf{INNER PROBLEM (Decoding):}
+    \begin{itemize}
+        \item For fixed $\theta$, $\{\Pi_y\}$, find $\hat{x} = D(y)$ to minimize $P_{\text{error}}$.
+    \end{itemize}
+\end{itemize}
+
+These are nested optimization problems with exponential complexity.
+
+\section{Part 2: Decoding Problem - Inferring $x$ from $y$}
+
+\subsection{Formal Problem Statement}
+
+\textbf{DECODING PROBLEM}
+
+\textbf{Given:}
+\begin{itemize}
+    \item Prior distribution: $p(x)$ over alphabet $\mathcal{X}^N$.
+    \item Encoding states: $\{\rho(x|\theta)\}$ for $x \in \mathcal{X}^N$.
+    \item Measurement POVM: $\{\Pi_y\}$ with $\sum_y \Pi_y = I$.
+    \item Observed outcome: $y$.
+\end{itemize}
+
+\textbf{Find:} Estimate $\hat{x}$ that minimizes error probability.
+
+\begin{equation}
+P_{\text{error}} = \Pr[\hat{x} \neq x] = \sum_x p(x) \sum_{y:D(y)\neq x} \text{Tr}[\Pi_y \rho(x|\theta)]
+\end{equation}
+
+\subsection{Optimal Decoding Strategy}
+
+\textbf{Maximum A Posteriori (MAP) Decoder:}
+\begin{equation}
+\hat{x}_{\text{MAP}}(y) = \arg\max_x p(x|y)
+\end{equation}
+
+By Bayes' theorem $\left(p(x|y) = \frac{p(y|x)p(x)}{p(y)}\right)$, and where likelihood is $p(y|x) = \text{Tr}[\Pi_y\rho(x|\theta)]$, the MAP decision rule is:
+
+\begin{equation}
+\hat{x}_{\text{MAP}}(y) = \arg\max_x \{p(x)\text{Tr}[\Pi_y\rho(x|\theta)]\}
+\end{equation}
+
+\textbf{Special case - Maximum Likelihood (ML):} If $p(x)$ is uniform:
+\begin{equation}
+\hat{x}_{\text{ML}}(y) = \arg\max_x \text{Tr}[\Pi_y\rho(x|\theta)]
+\end{equation}
+
+\subsection{Computational Complexity}
+
+\begin{itemize}
+    \item \textbf{Input size:} Alphabet size $M$, Sequence length $N$.
+    \item \textbf{Total messages:} $|\mathcal{X}^N| = M^N$.
+    \item \textbf{Naive MAP decoding:}
+    \begin{enumerate}
+        \item For each measurement outcome $y$:
+        \item For each possible $x \in \mathcal{X}^N$: Compute $\text{Tr}[\Pi_y\rho(x|\theta)]$.
+        \item Return $\hat{x} = \arg\max$.
+    \end{enumerate}
+    \item \textbf{Complexity:} $O(M^N \cdot d^2)$ where $d = \dim(\mathcal{H}^{\otimes N}) = (\dim \mathcal{H})^N$.
+\end{itemize}
+
+\textbf{Example:} Binary alphabet ($M = 2$), $N = 100$ symbols, qubit encoding ($d = 2$).
+\begin{itemize}
+    \item Total messages: $2^{100} \approx 10^{30}$.
+    \item Hilbert space dimension: $2^{100}$.
+    \item Trace computation: $O(2^{200})$ operations.
+    \item \textbf{Conclusion:} Exact decoding is intractable for large $N$.
+\end{itemize}
+
+\subsection{Structure of $\rho(x|\theta)$ for Memoryless Channel}
+
+\textbf{Key simplification:} Memoryless encoding.
+\begin{equation}
+\rho(x_1, \ldots, x_N|\theta) = \rho(x_1|\theta) \otimes \rho(x_2|\theta) \otimes \cdots \otimes \rho(x_N|\theta)
+\end{equation}
+
+\textbf{Consequence:} Likelihood factorizes if measurement is separable. If $\Pi_y = \Pi_{y_1} \otimes \cdots \otimes \Pi_{y_N}$, then:
+\begin{equation}
+\text{Tr}[\Pi_y\rho(x|\theta)] = \prod_{i=1}^N \text{Tr}[\Pi_{y_i}\rho(x_i|\theta)]
+\end{equation}
+
+This enables symbol-by-symbol decoding with complexity $O(N \cdot M)$. However, optimal quantum measurements are often non-separable (collective measurements).
+
+\section{Part 3: Measurement Design Problem}
+
+\subsection{Optimal POVM for Given Ensemble}
+
+\textbf{Given:} Ensemble $\{p(x), \rho(x|\theta)\}$ and Decision strategy $D$.
+
+\textbf{Find:} POVM $\{\Pi_y\}$ minimizing error probability.
+
+\begin{equation}
+\min_{\{\Pi_y\}} P_{\text{error}} = \min_{\{\Pi_y\}} \sum_x p(x) \sum_{y\neq x} \text{Tr}[\Pi_y\rho(x|\theta)]
+\end{equation}
+
+\textbf{Constraints:} $\Pi_y \geq 0$ (positive semidefinite) and $\sum_y \Pi_y = I$.
+
+\subsection{Helstrom Bound (Binary Case)}
+
+For two states $\rho_0$, $\rho_1$ with priors $p_0$, $p_1$:
+\begin{equation}
+P_{\text{error}}^{\min} = \frac{1}{2}\left(1 - \frac{1}{2}\|p_0\rho_0 - p_1\rho_1\|_1\right)
+\end{equation}
+
+where $\|\cdot\|_1$ is the trace norm. 
+
+\textbf{Computational cost:} Diagonalize $d \times d$ matrix $\Delta \rightarrow O(d^3)$.
+
+\subsection{Pretty Good Measurement (PGM)}
+
+For $M > 2$ states.
+\begin{itemize}
+    \item \textbf{Average state:} $\bar{\rho} = \sum_x p(x)\rho(x|\theta)$.
+    \item \textbf{PGM elements:} $\Pi_y^{\text{PGM}} = \bar{\rho}^{-1/2}\rho(y|\theta)\bar{\rho}^{-1/2}$.
+    \item \textbf{Total Complexity:} $O(M \cdot d^3)$.
+    \item \textbf{Performance:} $P_{\text{error}}^{\text{PGM}} \leq 2 \cdot P_{\text{error}}^{\text{optimal}}$.
+\end{itemize}
+
+\subsection{Complexity for $N$-Symbol Sequences}
+
+\begin{itemize}
+    \item \textbf{Joint Hilbert space dimension:} $d^N$.
+    \item \textbf{Optimal POVM computation:} Diagonalize $M^N \times d^N$ matrices.
+    \item \textbf{Complexity:} $O(M^N \cdot d^{3N})$.
+    \item \textbf{Example} ($M = 2$, $d = 2$, $N = 50$): Operations $O(2^{150}) \approx 10^{45}$. Clearly infeasible.
+\end{itemize}
+
+\section{Part 4: Inversion Problem - Optimizing System Parameters}
+
+\subsection{Formal Problem Statement}
+
+\textbf{INVERSION PROBLEM}
+
+\textbf{Optimization:}
+\begin{equation}
+\theta^*, \{\Pi_y\}^*, D^* = \arg\max I(X : Y|\theta, \{\Pi_y\}, D)
+\end{equation}
+
+\textbf{Subject to:} $\theta \in \Theta$ (feasible fiber/atom parameters), valid POVM, valid Decoder.
+
+\subsection{Mutual Information Objective}
+
+\begin{equation}
+I(X : Y) = H(Y) - H(Y|X)
+\end{equation}
+
+Gradient with respect to $\theta$:
+\begin{equation}
+\frac{\partial I}{\partial\theta} = \sum_y \frac{\partial p(y)}{\partial\theta} \log\frac{1}{p(y)} - \sum_{x,y} p(x)\frac{\partial p(y|x)}{\partial\theta}\log\frac{1}{p(y|x)}
+\end{equation}
+
+Where 
+\begin{equation}
+\frac{\partial p(y|x)}{\partial\theta} = \text{Tr}\left[\Pi_y \frac{\partial\rho(x|\theta)}{\partial\theta}\right]
+\end{equation}
+
+\subsection{Nested Optimization Structure}
+
+The inversion problem has three levels:
+\begin{enumerate}
+    \item \textbf{Level 1 (Decoder):} $D^* = \arg\min_D P_{\text{error}}[D|\theta, \{\Pi_y\}]$ (Section 2).
+    \item \textbf{Level 2 (Measurement):} $\{\Pi_y\}^* = \arg\min_{\{\Pi_y\}} P_{\text{error}}[\theta, \{\Pi_y\}]$ (Section 3).
+    \item \textbf{Level 3 (Parameter):} $\theta^* = \arg\min_\theta P_{\text{error}}[\theta]$.
+\end{enumerate}
+
+\subsection{Computational Bottleneck}
+
+Total complexity per gradient step: $O(M^N \cdot d^{3N} \cdot |\theta|)$. With $100-1000$ iterations, final complexity is $O(10^3 \cdot M^N \cdot d^{3N} \cdot |\theta|)$.
+
+\section{Part 5: Worked Example - Binary Coherent State Channel}
+
+\subsection{Problem Setup}
+
+\begin{itemize}
+    \item \textbf{Alphabet:} $\mathcal{X} = \{0, 1\}$.
+    \item \textbf{Encoding:}
+    \begin{itemize}
+        \item $x = 0$: $\rho(0|\theta) = |\alpha(\theta)\rangle\langle\alpha(\theta)|$
+        \item $x = 1$: $\rho(1|\theta) = |-\alpha(\theta)\rangle\langle-\alpha(\theta)|$
+    \end{itemize}
+    \item $\alpha(\theta) = \alpha_0 e^{i\beta(\theta)L} e^{-\alpha_{\text{atten}}(\theta)L/2}$.
+    \item \textbf{Parameters:} $\theta = \{L, \alpha_{\text{atten}}, \beta_2\}$.
+\end{itemize}
+
+\subsection{Decoding Problem (Photon Counting)}
+
+Measurement outcome $y = (n_1, \ldots, n_N)$ (photon counts).
+\begin{equation}
+p(n_i|x_i) = \text{Tr}\left[|n_i\rangle\langle n_i| |(-1)^{x_i}\alpha(\theta)\rangle\langle(-1)^{x_i}\alpha(\theta)|\right]
+\end{equation}
+
+Total complexity for $N$ symbols: $O(N)$.
+
+\subsection{Optimal Measurement - Dolinar Receiver}
+
+The Dolinar receiver (1973) achieves the Helstrom bound using time-dependent feedback.
+
+\begin{itemize}
+    \item \textbf{Helstrom error:} 
+    \begin{equation}
+    P_{\text{error}}^{\text{Helstrom}} = \frac{1}{2}\left(1 - \sqrt{1 - e^{-4|\alpha|^2}}\right)
+    \end{equation}
+    \item For $|\alpha|^2 = 10$, error $\approx 1.06 \times 10^{-18}$.
+    \item Photon counting error $\approx 10^{-4}$.
+    \item Dolinar gain: $10^{14}$ improvement.
+\end{itemize}
+
+\subsection{Inversion Problem}
+
+Optimize fiber length $L$ to maximize $I(X : Y)$.
+\begin{equation}
+L^* = \arg\max_L I(X : Y|L) \approx \arg\max_L [1 - h_2(P_{\text{error}}(L))]
+\end{equation}
+
+Gradient requires chain rule: 
+\begin{equation}
+\frac{dP_{\text{error}}}{dL} = \frac{dP_{\text{error}}}{d|\alpha|^2} \cdot \frac{d|\alpha|^2}{dL}
+\end{equation}
+
+\section{Part 6: Collective vs Separable Measurements}
+
+\subsection{Complexity Comparison Table}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Measurement Type} & \textbf{Decoding Complexity} & \textbf{Error Probability} & \textbf{Implementability} \\
+\hline
+Separable & $O(N \cdot M)$ & Suboptimal & Current tech \\
+\hline
+Collective (optimal) & $O(M^N \cdot d^{3N})$ & Helstrom bound & Requires QC \\
+\hline
+Collective (PGM) & $O(M^N \cdot d^{3N})$ & $\leq 2\times$ optimal & Requires QC \\
+\hline
+Adaptive & $O(N \cdot M)$ per round & Near-optimal & Feedback control \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsection{Collective Measurements Example}
+
+Distinguishing $\rho(00\ldots0) = |\alpha\rangle^{\otimes N}\langle\alpha|^{\otimes N}$ vs $\rho(11\ldots1) = |-\alpha\rangle^{\otimes N}\langle-\alpha|^{\otimes N}$.
+
+\begin{itemize}
+    \item \textbf{Separable:} $P_{\text{error}}^{\text{sep}} \approx \frac{1}{2}e^{-2N|\alpha|^2}$.
+    \item \textbf{Collective:} $P_{\text{error}}^{\text{coll}} \approx \frac{1}{2}e^{-4N|\alpha|^2}$.
+    \item \textbf{Improvement:} Factor of 2 in the exponent (Exponential advantage).
+\end{itemize}
+
+\section{Part 7: Computational Hardness Results}
+
+\begin{itemize}
+    \item \textbf{Theorem:} Quantum State Discrimination is SDP-complete.
+    \item For $N$-symbol tensor products ($d^N$ dimensions), the SDP has exponential size.
+    \item \textbf{Implication:} No polynomial-time algorithm known for optimal decoding when $N$ is large.
+    \item \textbf{Connection to QC:} Related to QCMA (Quantum Classical Merlin-Arthur) and QMA.
+\end{itemize}
+
+\section{Part 8: Inversion via Gradient-Based Optimization}
+
+\subsection{Parameter Gradient Computation}
+
+Chain rule: 
+\begin{equation}
+\frac{\partial I}{\partial\theta} = \sum_y \frac{\partial p(y)}{\partial\theta} \cdot \frac{\partial I}{\partial p(y)}
+\end{equation}
+
+Key challenge is computing $\frac{\partial\rho(x|\theta)}{\partial\theta}$.
+
+\subsection{Derivative of Quantum Evolution}
+
+For unitary evolution $\rho(t) = U(t)\rho(0)U^\dagger(t)$ where $U(t) = e^{-iHt/\hbar}$:
+\begin{equation}
+\frac{\partial\rho}{\partial\theta} = -\frac{it}{\hbar}\left[\frac{\partial H}{\partial\theta}, \rho(t)\right] \quad \text{(commutator form)}
+\end{equation}
+
+\subsection{Gradient Descent Algorithm}
+
+\begin{lstlisting}[language=Python, caption=Pseudocode for theta optimization]
+# Initialize
+theta = theta_0
+
+For iteration k = 1 to K_max:
+    # Forward pass
+    For each x in ensemble:
+        rho(x|theta) = evolve_state(rho(x,0), theta)
+    
+    # Compute POVM (Level 2)
+    Pi_y = optimize_measurement(rho(x|theta), p(x))
+    
+    # Compute mutual information
+    MI = compute_MI(rho(x|theta), Pi_y, p(x))
+    
+    # Backward pass (gradient)
+    dI_dtheta = compute_gradient_MI(theta)
+    
+    # Update
+    theta = theta + eta * dI_dtheta
+    
+    If converged: break
+
+Return theta*, Pi_y*
+\end{lstlisting}
+
+\section{Part 9: Approximate Inversion Strategies}
+
+\begin{itemize}
+    \item \textbf{9.1 Separable Approximation:} Restrict to $\Pi_y^{\text{sep}} = \bigotimes_i \Pi_{y_i}$. Decoding becomes $O(N \cdot M)$.
+    \item \textbf{9.2 Alternating Optimization:} Optimize $\theta$ and $\{\Pi_y\}$ alternately rather than jointly.
+    \item \textbf{9.3 Variational Quantum Algorithms:} Parameterize POVM elements $\Pi_y(\phi) = V(\phi)\Pi_y^{\text{std}}V^\dagger(\phi)$ for NISQ devices.
+\end{itemize}
+
+\section{Part 10: Summary - Computational Tasks}
+
+\textbf{Computational Bottleneck Summary:}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Task} & \textbf{Dim.} & \textbf{Variables} & \textbf{Complexity} & \textbf{Hardness} \\
+\hline
+Decoding & $d^N$ & $M^N$ msgs & $O(M^N \cdot d^2)$ & Exp in $N$ \\
+\hline
+Meas. design & $d^N \times d^N$ & $d^{2N}$ elems & $O(M^N \cdot d^{3N})$ & Exp in $N$ \\
+\hline
+Inversion & --- & $|\theta|$ params & $O(K \cdot M^N \cdot d^{3N})$ & Exp in $N$ \\
+\hline
+Sep. decoding & $d$ & $N \cdot M$ msgs & $O(N \cdot M)$ & Linear in $N$ \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Part 11: Worked Example - Complexity Calculation}
+
+\textbf{Problem:} 4-ary Alphabet ($M = 4$), 20 Symbols ($N = 20$), Qubit states ($d = 2$).
+
+\begin{itemize}
+    \item \textbf{Exact decoding:} $4^{20} \times 2^{40} \approx 10^{18}$ operations. At 1 GHz $\approx$ 30 years.
+    \item \textbf{Separable decoding:} $20 \times 16 = 320$ operations. At 1 GHz $\approx$ 320 ns.
+    \item \textbf{Inversion gradient:} $3 \times 10^{30}$ operations $\approx 3 \times 10^{13}$ years.
+    \item \textbf{Conclusion:} Need approximations or quantum computer.
+\end{itemize}
+
+\section{Part 12: Self-Check Questions}
+
+\begin{enumerate}
+    \item \textbf{Conceptual:} Why does the decoding problem have complexity exponential in $N$ but polynomial in $d$?
+    \item \textbf{Mathematical:} Derive the MAP decoder for binary coherent states $|\alpha\rangle$, $|-\alpha\rangle$ with photon counting measurement.
+    \item \textbf{Physical:} Explain why collective measurements can achieve exponentially better error probability than separable measurements.
+    \item \textbf{Computational:} For a separable measurement, prove that the likelihood factorizes: $\text{Tr}[\otimes\Pi_{y_i} \otimes \rho(x_i)] = \prod \text{Tr}[\Pi_{y_i}\rho(x_i)]$.
+\end{enumerate}
+
+\section{Part 13: Common Pitfalls}
+
+\begin{itemize}
+    \item \textbf{Mistake 1:} Assuming MAP and ML decoders are always identical.
+    \begin{itemize}
+        \item \textbf{Truth:} MAP includes prior $p(x)$; only equivalent if $p(x)$ uniform.
+    \end{itemize}
+    \item \textbf{Mistake 2:} Thinking separable measurements are always sufficient.
+    \begin{itemize}
+        \item \textbf{Truth:} For distinguishing $|\psi\rangle^{\otimes N}$ vs $|\phi\rangle^{\otimes N}$, collective measurements give exponential advantage.
+    \end{itemize}
+    \item \textbf{Mistake 3:} Computing full density matrix $\rho(x)$ for large $N$.
+    \begin{itemize}
+        \item \textbf{Truth:} Use matrix-free methods or separable approximations.
+    \end{itemize}
+    \item \textbf{Mistake 4:} Optimizing $\theta$ without considering measurement choice.
+    \begin{itemize}
+        \item \textbf{Truth:} Optimal $\theta$ depends on which POVM is used; must co-optimize.
+    \end{itemize}
+\end{itemize}
+
+\section{Part 14: Next Steps - Addressing Computational Challenges}
+
+\begin{itemize}
+    \item \textbf{Approximation schemes:} Variational methods, belief propagation, neural decoders.
+    \item \textbf{Quantum algorithms:} Use quantum computer to perform POVM, classical post-processing.
+    \item \textbf{Structured codes:} Exploit symmetry (e.g., stabilizer codes).
+    \item \textbf{Hardware-aware optimization:} Co-design $\theta$ and measurement for given detector technology.
+\end{itemize}
+
+\end{document}

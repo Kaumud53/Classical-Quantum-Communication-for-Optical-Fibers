@@ -1,0 +1,170 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath, amssymb, amsfonts}
+\usepackage{geometry}
+\usepackage{physics} % For bra-ket notation and traces
+
+% Geometry settings
+\geometry{margin=1in}
+
+\title{Classical-Quantum (Cq) Communication Framework}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Conceptual Foundation}
+
+\subsection{1.1 What is a Cq Channel?}
+A classical-quantum (Cq) channel encodes classical information into quantum states for transmission. Unlike fully quantum channels where both input and output are quantum, Cq channels possess the following structure:
+\begin{itemize}
+    \item \textbf{Input:} Classical symbols from an alphabet $\mathcal{X}=\{x_{1},x_{2},...,x_{M}\}$.
+    \item \textbf{Encoding:} A mapping $x\rightarrow\rho(x)$, where $\rho(x)$ is a density operator.
+    \item \textbf{Output:} A quantum state that can be measured by the receiver.
+\end{itemize}
+
+\textbf{Physical Intuition:} Consider fiber-optic communication where classical bits (0, 1) are encoded as different light polarizations or photon number states. The sender picks a classical symbol, prepares a corresponding quantum state, and sends it through a quantum channel.
+
+\section{Mathematical Framework}
+
+\subsection{2.1 Single Symbol Encoding}
+A Cq channel is defined by an encoding map $W$:
+\begin{equation}
+W:\mathcal{X}\rightarrow\mathcal{S}(\mathcal{H}) \quad \text{defined by} \quad x\mapsto\rho(x)
+\end{equation}
+where:
+\begin{itemize}
+    \item $\mathcal{X}=\{x_{1},...,x_{M}\}$ is the classical alphabet (finite set of messages).
+    \item $\mathcal{S}(\mathcal{H})$ is the space of density operators on Hilbert space $\mathcal{H}$.
+    \item $\rho(x)\in\mathcal{S}(\mathcal{H})$ satisfies the properties: Hermitian $(\rho(x)^{\dagger}=\rho(x))$, Positive semidefinite $(\rho(x)\ge0)$, and Normalized $(\tr[\rho(x)]=1)$.
+\end{itemize}
+
+\textbf{Example 1: Binary Alphabet with Qubit States (Orthogonal)}
+Given $\mathcal{X}=\{0,1\}$ and $\mathcal{H}=\mathbb{C}^{2}$ (qubit):
+\begin{align}
+\rho(0) &= |0\rangle\langle0| = \begin{pmatrix}1&0\\ 0&0\end{pmatrix} \\
+\rho(1) &= |1\rangle\langle1| = \begin{pmatrix}0&0\\ 0&1\end{pmatrix}
+\end{align}
+This represents orthogonal encoding, where states are perfectly distinguishable.
+
+\textbf{Example 2: Non-orthogonal Encoding (More Realistic)}
+\begin{align}
+\rho(0) &= |+\rangle\langle+| = \frac{1}{2}\begin{pmatrix}1&1\\ 1&1\end{pmatrix} \\
+\rho(1) &= |-\rangle\langle-| = \frac{1}{2}\begin{pmatrix}1&-1\\ -1&1\end{pmatrix}
+\end{align}
+These states have overlap.
+
+\subsection{2.2 Prior Distribution Over Alphabet}
+The sender chooses symbols according to a probability distribution $p=\{p(x_{1}),...,p(x_{M})\}$ where $\sum_{i}p(x_{i})=1$.
+
+The \textbf{Average State} (ensemble density matrix) is:
+\begin{equation}
+\overline{\rho}=\sum_{x}p(x)\rho(x)
+\end{equation}
+This is what the receiver sees on average without knowing which $x$ was sent.
+
+\subsection{2.3 N-Symbol Tensor Product Transmission}
+To send a message consisting of $N$ symbols $(x_{1},...,x_{N})$, we encode each independently (assuming a memoryless channel). The N-symbol joint quantum state is:
+\begin{equation}
+\rho(x_{1},...,x_{N})=\rho(x_{1})\otimes\rho(x_{2})\otimes\cdot\cdot\cdot\otimes\rho(x_{N})
+\end{equation}
+The dimension grows exponentially: $\dim(\mathcal{H}^{\otimes N})=(\dim\mathcal{H})^{N}$.
+
+\section{Formal Problem Statement}
+
+\subsection{3.1 Communication Setup}
+\begin{itemize}
+    \item \textbf{Encoder (Alice):} Maps classical message $x=(x_{1},...,x_{N})\in\mathcal{X}^{N}$ to quantum state $\rho(x)=\bigotimes_{i=1}^{N}\rho(x_{i})$.
+    \item \textbf{Channel:} Transmits state, modeled by CPTP map $\mathcal{E},$ outputting $\rho^{\prime}(x)=\mathcal{E}[\rho(x)]$.
+    \item \textbf{Decoder (Bob):} Measures using POVM elements $\{\Pi_{y}\}$ to get outcome $y$ with probability $\tr[\Pi_{y}\rho^{\prime}(x)]$ and estimates $\hat{x}=D(y)$.
+\end{itemize}
+
+\subsection{3.2 The Decoding Problem}
+\textbf{Goal:} Given measurement outcome $y$, estimate $x$ to minimize error probability.
+
+\textbf{Optimal Decoding (Maximum Likelihood):}
+\begin{equation}
+\hat{x}_{ML} = \operatorname{argmax}_{x} \tr[\Pi_{y}\rho(x)]
+\end{equation}
+\textbf{Complexity:} This is computationally hard because the optimization occurs over an exponentially large space ($M^{N}$ messages) and involves non-commuting density operators. This connects to NP-hardness.
+
+\section{Information-Theoretic Quantities}
+
+\subsection{4.1 Holevo Quantity (Accessible Information)}
+The maximum information extractable from the Cq channel is the Holevo Quantity $\chi$:
+\begin{equation}
+\chi(\{p(x),\rho(x)\}) = S(\overline{\rho}) - \sum_{x}p(x)S(\rho(x))
+\end{equation}
+where $S(\rho)=-\tr[\rho \log \rho]$ is the von Neumann entropy.
+
+\textbf{Holevo Bound:} The classical mutual information $I(X:Y)$ is bounded by $\chi$:
+\begin{equation}
+I(X:Y) \le \chi(\{p(x),\rho(x)\})
+\end{equation}
+
+\subsection{4.2 Channel Capacity}
+For $N$ uses of the channel, the capacity is $C = \max_{p(x)}\chi(\{p(x),\rho(x)\})$. An achievable rate $R < C$ implies error probability $\to 0$ as $N \to \infty$.
+
+\section{Worked Example: Binary Phase Shift Keying (BPSK)}
+\textbf{Setup:}
+\begin{itemize}
+    \item $\mathcal{X}=\{0,1\}$, Priors $p(0)=p(1)=1/2$.
+    \item Encoding: $\rho(0)=|\alpha\rangle\langle\alpha|$ and $\rho(1)=|-\alpha\rangle\langle-\alpha|$ (coherent states).
+\end{itemize}
+
+\textbf{Coherent State Definition:}
+\begin{equation}
+|\alpha\rangle = e^{-|\alpha|^{2}/2}\sum_{n}\frac{\alpha^{n}}{\sqrt{n!}}|n\rangle
+\end{equation}
+Physically realized by a laser pulse with average photon number $\bar{n}=|\alpha|^{2}$.
+
+\section{Connection to Research}
+
+\subsection{6.1 Electromagnetic Field Parametrization}
+Your retarded potentials $A(t,r|\theta)$ and $\Phi(t,r|\theta)$ depend on channel parameter $\theta$ (fiber dispersion, loss, coupling strength). The encoding map becomes $x\rightarrow\rho(x|\theta)$.
+
+\subsection{6.2 Atom-Field Hamiltonian Connection}
+Encoding states $\rho(x)$ are prepared via the interaction Hamiltonian:
+\begin{equation}
+H(t)=H_{0}+V_{control}(t)
+\end{equation}
+By controlling $V_{control}(t)$ you prepare different states. For example, $x=0$ (no pulse) yields ground state $|g\rangle$, and $x=1$ ($\pi$-pulse) yields excited state $|e\rangle$.
+
+\section{Key Equations Summary}
+\begin{align}
+\text{Encoding Map:} & \quad \rho(x)\in\mathcal{S}(\mathcal{H}), \tr[\rho(x)] = 1, \rho(x)\ge0 \\
+\text{N-Symbol State:} & \quad \rho(x_{1},...,x_{N})=\bigotimes_{i=1}^{N}\rho(x_{i}) \\
+\text{Average State:} & \quad \overline{\rho}=\sum_{x}p(x)\rho(x) \\
+\text{Holevo Bound:} & \quad I(X:Y)\le S(\overline{\rho})-\sum_{x}p(x)S(\rho(x)) \\
+\text{Optimal Decoding:} & \quad \hat{x}=\operatorname{argmax}_{x}\tr[\Pi_{y}\rho(x)]
+\end{align}
+
+\section{Self-Check \& Common Pitfalls}
+
+\subsection{Self-Check Questions}
+\begin{enumerate}
+    \item Why does $\dim(\mathcal{H}^{\otimes N})=(\dim\mathcal{H})^{N}$ make decoding hard for large $N$?
+    \item Calculate $\overline{\rho}$ for uniform distribution over $\{|0\rangle,|1\rangle,|+\rangle,|-\rangle\}$.
+    \item In BPSK, why does increasing $|\alpha|^{2}$ improve distinguishability?
+    \item How would $H(t|\theta)$ affect the prepared states $\rho(x)$?
+\end{enumerate}
+
+\subsection{Common Pitfalls}
+\begin{itemize}
+    \item \textbf{Mistake:} Thinking $\rho(x_{1},x_{2})\ne\rho(x_{1})\otimes\rho(x_{2})$ implies entanglement. \textbf{Truth:} Tensor product states are separable. Entanglement requires $\rho\ne\bigotimes_{i}\rho_{i}$.
+    \item \textbf{Mistake:} Assuming uniform distribution is always optimal. \textbf{Truth:} Optimal $p(x)$ depends on $\{\rho(x)\}$.
+    \item \textbf{Mistake:} Confusing von Neumann entropy $S(\rho)$ with Shannon entropy $H(X)$. \textbf{Truth:} $S(\rho)$ measures quantum uncertainty; $H(X)$ measures classical uncertainty.
+\end{itemize}
+
+\section{Next Steps}
+To proceed with the electromagnetic field theory:
+\begin{enumerate}
+    \item Derive retarded potentials $A(t,r|\theta)$ for your fiber geometry.
+    \item Connect fields to the atom-field Hamiltonian $H(t|\theta)$.
+    \item Show how $H(t|\theta)$ prepares $\rho(x)$.
+    \item Formalize the N-symbol decoding problem with measurement operators $\{\Pi_{y}\}$.
+\end{enumerate}
+
+\end{document}

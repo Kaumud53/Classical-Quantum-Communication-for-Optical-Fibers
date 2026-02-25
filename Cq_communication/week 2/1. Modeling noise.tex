@@ -1,0 +1,296 @@
+\documentclass[12pt]{article}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{braket}
+\usepackage{physics}
+
+\title{Modeling Fiber Noise Using the GKSL Master Equation}
+\author{Quantum Communication Theory}
+\date{Week 2: Noisy Quantum Channels}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+This document provides a detailed mathematical methodology for modeling noise in optical fibers using the Gorini-Kossakowski-Sudarshan-Lindblad (GKSL) master equation. We consider a qubit encoded in photon polarization propagating through a fiber, interacting with its environment.
+
+\section{The Open Quantum System Framework}
+
+\subsection{System and Environment}
+Consider a composite Hilbert space:
+\[
+\mathcal{H} = \mathcal{H}_S \otimes \mathcal{H}_E
+\]
+where:
+\begin{itemize}
+    \item $\mathcal{H}_S$: System Hilbert space (the qubit, $\dim = 2$)
+    \item $\mathcal{H}_E$: Environment Hilbert space (fiber modes, phonons, impurities, $\dim \to \infty$)
+\end{itemize}
+
+The total Hamiltonian is:
+\[
+H_{\text{total}} = H_S \otimes \mathbb{I}_E + \mathbb{I}_S \otimes H_E + H_{I}
+\]
+where:
+\begin{itemize}
+    \item $H_S$: System Hamiltonian
+    \item $H_E$: Environment Hamiltonian
+    \item $H_I$: Interaction Hamiltonian
+\end{itemize}
+
+\subsection{Density Matrix Formalism}
+The state of the system is described by a density matrix $\rho_S(t)$ obtained by tracing out the environment:
+\[
+\rho_S(t) = \text{Tr}_E[\rho_{\text{total}}(t)]
+\]
+where $\rho_{\text{total}}(t)$ evolves under the von Neumann equation:
+\[
+\frac{d\rho_{\text{total}}}{dt} = -\frac{i}{\hbar}[H_{\text{total}}, \rho_{\text{total}}]
+\]
+
+\section{Derivation of the GKSL Master Equation}
+
+\subsection{Assumptions}
+We make the following standard assumptions:
+\begin{enumerate}
+    \item \textbf{Weak Coupling}: System-environment coupling is weak
+    \item \textbf{Born Approximation}: Environment remains approximately unchanged
+    \item \textbf{Markov Approximation}: Environment has no memory (short correlation time)
+    \item \textbf{Secular Approximation}: Fast-oscillating terms average to zero
+\end{enumerate}
+
+\subsection{Interaction Picture}
+Transform to interaction picture with respect to $H_0 = H_S + H_E$:
+\[
+\tilde{\rho}(t) = e^{iH_0 t/\hbar} \rho(t) e^{-iH_0 t/\hbar}
+\]
+\[
+\tilde{H}_I(t) = e^{iH_0 t/\hbar} H_I e^{-iH_0 t/\hbar}
+\]
+
+The interaction picture density matrix evolves as:
+\[
+\frac{d\tilde{\rho}}{dt} = -\frac{i}{\hbar}[\tilde{H}_I(t), \tilde{\rho}(t)]
+\]
+
+\subsection{Born-Markov Master Equation}
+After applying the Born and Markov approximations, we obtain:
+\[
+\frac{d\tilde{\rho}_S}{dt} = -\frac{1}{\hbar^2} \int_0^\infty d\tau \, \text{Tr}_E\left[\tilde{H}_I(t), [\tilde{H}_I(t-\tau), \tilde{\rho}_S(t) \otimes \rho_E]\right]
+\]
+where $\rho_E$ is the stationary state of the environment.
+
+\subsection{Standard Form}
+Transforming back to the Schrödinger picture and applying the secular approximation yields the Lindblad form:
+
+\begin{equation}
+\boxed{\frac{d\rho_S}{dt} = -\frac{i}{\hbar}[H_S, \rho_S] + \sum_k \gamma_k \left( L_k \rho_S L_k^\dagger - \frac{1}{2}\{L_k^\dagger L_k, \rho_S\} \right)}
+\label{eq:lindblad}
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $H_S$: Effective system Hamiltonian (including Lamb shifts)
+    \item $L_k$: Lindblad operators (quantum jump operators)
+    \item $\gamma_k \geq 0$: Decay rates
+\end{itemize}
+
+\section{Modeling Fiber Noise Channels}
+
+\subsection{Amplitude Damping (Photon Loss)}
+Photon loss is the dominant noise in optical fibers, caused by absorption, scattering, and coupling losses.
+
+\subsubsection{Lindblad Operator}
+\[
+L_{\text{loss}} = \sigma_- = \begin{pmatrix} 0 & 0 \\ 1 & 0 \end{pmatrix} = \ket{0}\bra{1}
+\]
+where $\ket{0}$ is the vacuum (no photon) and $\ket{1}$ is the single-photon state.
+
+\subsubsection{Master Equation}
+\begin{equation}
+\frac{d\rho}{dt} = \gamma_{\text{loss}} \left( \sigma_- \rho \sigma_+ - \frac{1}{2}\{\sigma_+\sigma_-, \rho\} \right)
+\label{eq:amp_damp}
+\end{equation}
+where $\sigma_+ = \sigma_-^\dagger = \ket{1}\bra{0}$.
+
+\subsubsection{Analytical Solution}
+The amplitude damping channel has the Kraus representation:
+\[
+\rho(t) = E_0 \rho(0) E_0^\dagger + E_1 \rho(0) E_1^\dagger
+\]
+with Kraus operators:
+\[
+E_0 = \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-\eta(t)} \end{pmatrix}, \quad
+E_1 = \begin{pmatrix} 0 & \sqrt{\eta(t)} \\ 0 & 0 \end{pmatrix}
+\]
+where $\eta(t) = 1 - e^{-\gamma_{\text{loss}} t}$ is the loss probability.
+
+\subsection{Phase Damping (Dephasing)}
+Phase damping arises from refractive index fluctuations and thermal effects, causing random phase shifts.
+
+\subsubsection{Lindblad Operator}
+\[
+L_{\phi} = \sigma_z = \begin{pmatrix} 1 & 0 \\ 0 & -1 \end{pmatrix}
+\]
+
+\subsubsection{Master Equation}
+\begin{equation}
+\frac{d\rho}{dt} = \gamma_{\phi} \left( \sigma_z \rho \sigma_z - \rho \right)
+\label{eq:phase_damp}
+\end{equation}
+Note that $\sigma_z \rho \sigma_z - \rho = \sigma_z \rho \sigma_z - \frac{1}{2}\{\sigma_z^2, \rho\}$ since $\sigma_z^2 = \mathbb{I}$.
+
+\subsubsection{Analytical Solution}
+The phase damping channel in the computational basis:
+\[
+\begin{pmatrix}
+\rho_{00}(0) & \rho_{01}(0) \\
+\rho_{10}(0) & \rho_{11}(0)
+\end{pmatrix}
+\longrightarrow
+\begin{pmatrix}
+\rho_{00}(0) & e^{-\gamma_{\phi} t} \rho_{01}(0) \\
+e^{-\gamma_{\phi} t} \rho_{10}(0) & \rho_{11}(0)
+\end{pmatrix}
+\]
+
+\subsection{General Fiber Noise Model}
+A realistic fiber combines both amplitude and phase damping:
+
+\begin{equation}
+\boxed{\frac{d\rho}{dt} = -\frac{i}{\hbar}[H_S, \rho] + \gamma_{\text{loss}} \left( \sigma_- \rho \sigma_+ - \frac{1}{2}\{\sigma_+\sigma_-, \rho\} \right) + \gamma_{\phi} \left( \sigma_z \rho \sigma_z - \rho \right)}
+\label{eq:full_model}
+\end{equation}
+
+\subsection{Relation to Physical Parameters}
+
+\subsubsection{Loss Coefficient}
+The loss rate $\gamma_{\text{loss}}$ relates to the fiber attenuation coefficient $\alpha$ (in dB/km):
+\[
+\gamma_{\text{loss}} = \frac{\alpha v_g \ln(10)}{10}
+\]
+where $v_g$ is the group velocity.
+
+For standard single-mode fiber at 1550 nm:
+\begin{itemize}
+    \item $\alpha \approx 0.2$ dB/km
+    \item $v_g \approx c/n_{\text{eff}} \approx 2 \times 10^8$ m/s
+    \item $\gamma_{\text{loss}} \approx 9.2 \times 10^{-6}$ m$^{-1}$
+\end{itemize}
+
+\subsubsection{Dephasing Rate}
+The dephasing rate $\gamma_{\phi}$ relates to the fiber's polarization mode dispersion (PMD) parameter $D_p$:
+\[
+\gamma_{\phi} = \frac{(\omega D_p \Delta L)^2 v_g}{2}
+\]
+where $\omega$ is the optical frequency and $\Delta L$ is the length scale of birefringence fluctuations.
+
+\section{Solving the Master Equation}
+
+\subsection{Superoperator Formalism}
+Rewrite Eq. \eqref{eq:full_model} as:
+\[
+\frac{d\vec{\rho}}{dt} = \mathcal{L} \vec{\rho}
+\]
+where $\vec{\rho}$ is the vectorized density matrix and $\mathcal{L}$ is the Lindblad superoperator.
+
+\subsection{Bloch Vector Representation}
+Express $\rho$ in the Pauli basis:
+\[
+\rho = \frac{1}{2} \left( \mathbb{I} + \vec{r} \cdot \vec{\sigma} \right)
+\]
+where $\vec{r} = (r_x, r_y, r_z)$ is the Bloch vector.
+
+The master equation becomes:
+\begin{align}
+\frac{dr_x}{dt} &= -\left( \frac{\gamma_{\text{loss}}}{2} + 2\gamma_{\phi} \right) r_x \\
+\frac{dr_y}{dt} &= -\left( \frac{\gamma_{\text{loss}}}{2} + 2\gamma_{\phi} \right) r_y \\
+\frac{dr_z}{dt} &= -\gamma_{\text{loss}} (r_z + 1)
+\end{align}
+
+\subsection{Solution in Bloch Coordinates}
+The analytical solution:
+\begin{align}
+r_x(t) &= r_x(0) e^{-(\gamma_{\text{loss}}/2 + 2\gamma_{\phi})t} \\
+r_y(t) &= r_y(0) e^{-(\gamma_{\text{loss}}/2 + 2\gamma_{\phi})t} \\
+r_z(t) &= -1 + (r_z(0) + 1) e^{-\gamma_{\text{loss}}t}
+\end{align}
+
+\subsection{Complete Positive Trace-Preserving (CPTP) Map}
+The evolution can be written as a quantum channel $\mathcal{E}$:
+\[
+\rho(t) = \mathcal{E}_t[\rho(0)] = \sum_{k=0}^3 K_k(t) \rho(0) K_k^\dagger(t)
+\]
+with Kraus operators for the combined channel:
+\begin{align}
+K_0 &= \sqrt{1-p_{\text{loss}}} \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-\lambda(t)} \end{pmatrix} \\
+K_1 &= \sqrt{1-p_{\text{loss}}} \begin{pmatrix} 0 & 0 \\ \sqrt{\lambda(t)} & 0 \end{pmatrix} \\
+K_2 &= \sqrt{p_{\text{loss}}} \begin{pmatrix} 1 & 0 \\ 0 & \sqrt{1-\lambda(t)} \end{pmatrix} \\
+K_3 &= \sqrt{p_{\text{loss}}} \begin{pmatrix} 0 & 0 \\ \sqrt{\lambda(t)} & 0 \end{pmatrix}
+\end{align}
+where $p_{\text{loss}} = 1 - e^{-\gamma_{\text{loss}} t}$ and $\lambda(t) = 1 - e^{-2\gamma_{\phi} t}$.
+
+\section{Numerical Implementation}
+
+\subsection{Discretization}
+For numerical simulation, discretize time with step $\Delta t$:
+\[
+\rho[n+1] = \rho[n] + \Delta t \cdot \mathcal{L}(\rho[n])
+\]
+where $\mathcal{L}$ is the right-hand side of Eq. \eqref{eq:full_model}.
+
+\subsection{Fourth-Order Runge-Kutta Method}
+For higher accuracy:
+\begin{align}
+k_1 &= \Delta t \cdot \mathcal{L}(\rho[n]) \\
+k_2 &= \Delta t \cdot \mathcal{L}(\rho[n] + k_1/2) \\
+k_3 &= \Delta t \cdot \mathcal{L}(\rho[n] + k_2/2) \\
+k_4 &= \Delta t \cdot \mathcal{L}(\rho[n] + k_3) \\
+\rho[n+1] &= \rho[n] + \frac{1}{6}(k_1 + 2k_2 + 2k_3 + k_4)
+\end{align}
+
+\subsection{Quantum Trajectory Method}
+For Monte Carlo simulation of individual realizations:
+\begin{enumerate}
+    \item Initialize $\psi(0)$
+    \item For each time step $\Delta t$:
+    \begin{itemize}
+        \item Compute probability of quantum jumps: $p_k = \gamma_k \Delta t \bra{\psi}L_k^\dagger L_k\ket{\psi}$
+        \item Generate random number $r \in [0,1]$
+        \item If $r < \sum_k p_k$, apply jump operator $L_k$
+        \item Otherwise, evolve under non-Hermitian Hamiltonian: $H_{\text{eff}} = H_S - \frac{i\hbar}{2}\sum_k \gamma_k L_k^\dagger L_k$
+    \end{itemize}
+    \item Average over many trajectories to recover $\rho(t)$
+\end{enumerate}
+
+\section{Parameter Estimation from Experimental Data}
+
+\subsection{Quantum Process Tomography}
+Reconstruct the channel $\mathcal{E}$ from experimental measurements:
+\begin{enumerate}
+    \item Prepare known input states $\{\rho_i\}$
+    \item Measure output states $\{\mathcal{E}(\rho_i)\}$
+    \item Solve linear equations: $\mathcal{E}(\rho_i) = \sum_{m,n} \chi_{mn} A_m \rho_i A_n^\dagger$
+    \item Extract $\gamma_{\text{loss}}$ and $\gamma_{\phi}$ from $\chi$-matrix
+\end{enumerate}
+
+\subsection{Decay Rate Fitting}
+From measured coherence decay:
+\begin{align}
+C(t) &= |\rho_{01}(t)| = e^{-(\gamma_{\text{loss}}/2 + \gamma_{\phi})t} \\
+P_1(t) &= \rho_{11}(t) = \rho_{11}(0) e^{-\gamma_{\text{loss}}t}
+\end{align}
+Fit exponential decays to extract $\gamma_{\text{loss}}$ and $\gamma_{\phi}$.
+
+\section{Summary}
+The GKSL master equation provides a rigorous framework for modeling fiber noise. The key parameters are:
+\begin{itemize}
+    \item Amplitude damping rate $\gamma_{\text{loss}}$: Governs photon loss
+    \item Phase damping rate $\gamma_{\phi}$: Governs dephasing
+    \item Combined effect: Exponential decay of off-diagonal elements at rate $\gamma_{\text{loss}}/2 + \gamma_{\phi}$
+    \item Diagonal elements: $\rho_{11}$ decays at rate $\gamma_{\text{loss}}$
+\end{itemize}
+
+This model forms the foundation for calculating channel capacities and analyzing decoding strategies under noise.
+
+\end{document}

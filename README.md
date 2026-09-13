@@ -3,7 +3,7 @@
 **Authors:** K. Gautam, Kaumud Sharma
 **Affiliation:** Department of Quantum Computing, Quantum Research and Centre of Excellence (QRACE), Delhi, India
 
-> Status: Submitted, *IEEE Transactions on Quantum Engineering*
+> Status: Under review
 
 ## Abstract
 
@@ -422,7 +422,7 @@ python src/adaptive_estimator.py
   title   = {A Rigorous Quantum Communication Framework for Optical Fibre Channels: Integrated Control, Computational Hardness, and Noise-Assisted Security},
   author  = {Gautam, K. and Sharma, Kaumud},
   journal = {IEEE Transactions on Quantum Engineering},
-  year    = {2024},
+  year    = {Under review},
   note    = {Submitted}
 }
 ```
